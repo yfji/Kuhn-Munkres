@@ -1,31 +1,29 @@
 #include "km.h"
+
 #include <sstream>
 using namespace std;
 
-// float* weights;
-// float* flagX;
-// float* flagY;
-// char* usedX;
-// char* usedY;
-// int* matchX;
-// int* matchY;
+//float* weights;
+//float* flagX;
+//float* flagY;
+//char* usedX;
+//char* usedY;
+//int* matchX;
+//int* matchY;
 static PyMemberDef KM_DataMembers[] =
 {
-	   {(char*)("max_w"),   T_FLOAT, offsetof(KM, max_w),   0, (char*)("Max weight")},
 	   {(char*)("N"),    T_INT,  offsetof(KM, N),    0, (char*)("Max number of m and n")},
 	   {(char*)("weights"), T_OBJECT,  offsetof(KM, weights), 0, (char*)("Weights of each node pair")},
-	   {(char*)("flagX"),   T_OBJECT,  offsetof(KM, flagX),  0, (char*)("Flags of X nodes")},
-	   {(char*)("flagY"), T_OBJECT, offsetof(KM, flagY),  0, (char*)("Flags of Y nodes") },
-       {(char*)("usedX"), T_OBJECT, offsetof(KM, usedX),  0, (char*)("Use of X nodes")},
-	   {(char*)("usedY"), T_OBJECT, offsetof(KM, usedY),  0, (char*)("Use of Y nodes") },
 	   {(char*)("matchX"), T_OBJECT, offsetof(KM, matchX),  0, (char*)("Match of X nodes") },
 	   {(char*)("matchY"), T_OBJECT, offsetof(KM, matchY),  0, (char*)("Match of Y nodes")},
 	   {NULL, NULL, NULL, 0, NULL}
 };
 
 
-void KM::init(float* data, int m, int n){
+void KM::init(float* data, int m, int n) {
 	N = max(m, n);
+	front = m;
+	back = n;
 	weights = new float[N * N];
 	flagX = new float[N];
 	flagY = new float[N];
@@ -36,16 +34,28 @@ void KM::init(float* data, int m, int n){
 	max_w = 0.0;
 
 	constructMatrix(data, m, n);
-	km();
+}
+
+void KM::del() {
+	delete[] weights;
+	delete[] flagX;
+	delete[] flagY;
+	delete[] usedX;
+	delete[] usedY;
+	delete[] matchX;
+	delete[] matchY;
 }
 
 KM::~KM() {
-	
+	// The destruction will not be called in tp_free(Python)
+	del();
+	//cout << "Destruct KM" << endl;
 }
+
 void KM::constructMatrix(float* data, int m, int n) {
 	for (int i = 0; i < m; ++i) {
 		for (int j = 0; j < n; ++j) {
-			weights[i*N + j] = data[i*m + j];
+			weights[i*N + j] = data[i*n + j];
 		}
 		for (int j = n; j < N; ++j) {
 			weights[i*N + j] = 0.0;
@@ -86,7 +96,7 @@ bool KM::dfs(int v) {
 	return false;
 }
 
-void KM::km() {
+void KM::compute() {
 	for (int i = 0; i < N; ++i) {
 		while (true) {
 			for (int i = 0; i < N; ++i) {
@@ -127,6 +137,22 @@ void KM::km() {
 	}
 }
 
+vector<int> KM::getMatch(bool front2back) {
+	vector<int> matches;
+	if (front2back) {
+		for (int i = 0; i < front; ++i)
+			matches.push_back(matchX[i]);
+	}
+	else {
+		for (int i = 0; i < back; ++i)
+			matches.push_back(matchY[i]);
+	}
+	return matches;
+}
+
+/*
+*Python functions
+*/
 
 static void KM_init(KM* self, PyObject* pArgs) {
 	PyObject* pyData = PyList_New(0);
@@ -136,10 +162,11 @@ static void KM_init(KM* self, PyObject* pArgs) {
 	if (!ok) {
 		cout << "PyObject parsing args error" << endl;
 		return;
-	}		
+	}
 	data = new float[m*n];
 	for (int i = 0; i < m*n; ++i) {
-		data[i] = static_cast<float>(PyFloat_AsDouble(PyList_GetItem(pyData, i)));
+		float x = static_cast<float>(PyFloat_AsDouble(PyList_GetItem(pyData, i)));
+		data[i] = x;
 	}
 	self->init(data, m, n);
 	Py_DECREF(pyData);
@@ -147,21 +174,15 @@ static void KM_init(KM* self, PyObject* pArgs) {
 }
 
 static void KM_Destruct(KM* self) {
-	delete[] self->weights;
-	delete[] self->flagX;
-	delete[] self->flagY;
-	delete[] self->usedX;
-	delete[] self->usedY;
-	delete[] self->matchX;
-	delete[] self->matchY;
-
+	self->del();
+	//cout << "Python destruct" << endl;
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
 static PyObject* KM_Str(KM* self)
 {
 	stringstream ostr;
-	ostr << "Kuhn Munkres algorithm for "<<self->N<< "X nodes and "<<self->N<<" Y nodes"<< endl;
+	ostr << "Kuhn Munkres algorithm for " << self->N << " X nodes and " << self->N << " Y nodes" << endl;
 	for (int i = 0; i < self->N; ++i) {
 		for (int j = 0; j < self->N; ++j) {
 			ostr << self->weights[i*self->N + j];
@@ -174,7 +195,7 @@ static PyObject* KM_Str(KM* self)
 	return Py_BuildValue("s", ostr.str().c_str());
 }
 
-static PyObject* KM_Repr(KM* self)            //ï¿½ï¿½ï¿½ï¿½reprï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½Ê±ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½.
+static PyObject* KM_Repr(KM* self)            //µ÷ÓÃreprÄÚÖÃº¯ÊýÊ±×Ô¶¯µ÷ÓÃ.
 {
 	return KM_Str(self);
 }
@@ -187,20 +208,29 @@ static PyObject* KM_getMatch(KM* self, PyObject* pArgs) {
 	if (PyArg_ParseTuple(pArgs, "i", &xy) == 0) {
 		return NULL;
 	}
-	for (int i = 0; i < self->N; ++i) {
-		if (xy == 0) {
+	if (xy == 1) {
+		for (int i = 0; i < self->front; ++i)
 			PyList_Append(list, PyLong_FromLong(self->matchX[i]));
-		}
-		else {
+	}
+	else {
+		for (int i = 0; i < self->back; ++i)
 			PyList_Append(list, PyLong_FromLong(self->matchY[i]));
-		}
 	}
 	return list;
 }
 
+static PyObject* KM_maxWeight(KM* self, PyObject* pArgs) {
+	return Py_BuildValue("f", self->maxWeight());
+}
+
+static void KM_compute(KM* self, PyObject* pArgs) {
+	self->compute();
+}
+
 static PyMethodDef KM_Methods[] = {
 	{"getMatch", (PyCFunction)KM_getMatch, METH_VARARGS, "Get the result of Kuhn-Munkres"},
-    {"maxWeights", (PyCFunction)maxWeights, METH_VARARGS, "Get the max matching weights"},
+	{"maxWeight", (PyCFunction)KM_maxWeight, METH_VARARGS, "Get the max matching weights"},
+	{"compute", (PyCFunction)KM_compute, METH_VARARGS, "Compute the KM match" },
 	{NULL, NULL}
 };
 
@@ -215,39 +245,39 @@ static PyModuleDef ModuleInfo =
 
 static PyTypeObject KM_ClassInfo =
 {
-	   PyVarObject_HEAD_INIT(NULL, 0)"Module.MyCppClass",                 //ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½__class__ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½. CPPï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.__name__ï¿½ï¿½È¡.
-	   sizeof(KM),0,(destructor)KM_Destruct,    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+	   PyVarObject_HEAD_INIT(NULL, 0)"Module.MyCppClass",                 //¿ÉÒÔÍ¨¹ý__class__»ñµÃÕâ¸ö×Ö·û´®. CPP¿ÉÒÔÓÃÀà.__name__»ñÈ¡.
+	   sizeof(KM),0,(destructor)KM_Destruct,    //ÀàµÄÎö¹¹º¯Êý.
 	   0,0,0,0,
-	   (reprfunc)KM_Repr,          //repr ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¡ï¿½
+	   (reprfunc)KM_Repr,          //repr ÄÚÖÃº¯Êýµ÷ÓÃ¡£
 	   0,0,0,0,0,
-	   (reprfunc)KM_Str,          //Str/printï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+	   (reprfunc)KM_Str,          //Str/printÄÚÖÃº¯Êýµ÷ÓÃ.
 	   0,0,0,
-	   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,                 //ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½á¹©ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ÎªPy_TPFLAGS_DEFAULE
-	   "MyCppClass Objects---Extensioned by C++!",                   //__doc__,ï¿½ï¿½/ï¿½á¹¹ï¿½ï¿½DocString.
+	   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,                 //Èç¹ûÃ»ÓÐÌá¹©·½·¨µÄ»°£¬ÎªPy_TPFLAGS_DEFAULE
+	   "MyCppClass Objects---Extensioned by C++!",                   //__doc__,Àà/½á¹¹µÄDocString.
 	   0,0,0,0,0,0,
-	   KM_Methods,        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
-	   KM_DataMembers,          //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½Ô±ï¿½ï¿½ï¿½ï¿½.
+	   KM_Methods,        //ÀàµÄËùÓÐ·½·¨¼¯ºÏ.
+	   KM_DataMembers,          //ÀàµÄËùÓÐÊý¾Ý³ÉÔ±¼¯ºÏ.
 	   0,0,0,0,0,0,
-	   (initproc)KM_init,      //ï¿½ï¿½Ä¹ï¿½ï¿½ìº¯ï¿½ï¿½.
+	   (initproc)KM_init,      //ÀàµÄ¹¹Ôìº¯Êý.
 	   0,
 };
 
 
 
-PyMODINIT_FUNC           // == __decslpec(dllexport) PyObject*, ï¿½ï¿½ï¿½åµ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
-PyInit_KM(void)       //Ä£ï¿½ï¿½ï¿½â²¿ï¿½ï¿½ï¿½ï¿½Îª--CppClass
+PyMODINIT_FUNC           // == __decslpec(dllexport) PyObject*, ¶¨Òåµ¼³öº¯Êý.
+PyInit_KM(void)       //Ä£¿éÍâ²¿Ãû³ÆÎª--CppClass
 {
 	PyObject* pReturn = 0;
-	KM_ClassInfo.tp_new = PyType_GenericNew;       //ï¿½ï¿½ï¿½ï¿½ï¿½newï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+	KM_ClassInfo.tp_new = PyType_GenericNew;       //´ËÀàµÄnewÄÚÖÃº¯Êý¡ª½¨Á¢¶ÔÏó.
 
 	if (PyType_Ready(&KM_ClassInfo) < 0)
 		return NULL;
 
-	pReturn = PyModule_Create(&ModuleInfo);          //ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½.
+	pReturn = PyModule_Create(&ModuleInfo);          //¸ù¾ÝÄ£¿éÐÅÏ¢´´½¨Ä£¿é.
 	if (pReturn == 0)
 		return NULL;
 
 	Py_INCREF(&ModuleInfo);
-	PyModule_AddObject(pReturn, "KM", (PyObject*)&KM_ClassInfo); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ëµ½Ä£ï¿½ï¿½ï¿½Dictionaryï¿½ï¿½.
+	PyModule_AddObject(pReturn, "KM", (PyObject*)&KM_ClassInfo); //½«Õâ¸öÀà¼ÓÈëµ½Ä£¿éµÄDictionaryÖÐ.
 	return pReturn;
 }

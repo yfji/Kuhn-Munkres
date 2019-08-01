@@ -1,4 +1,6 @@
 #pragma once
+
+#pragma once
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -10,28 +12,36 @@ using namespace std;
 class KM {
 	PyObject_HEAD
 public:
-//	KM(float* data, int m, int n);
-	KM() {};
+	//	KM(float* data, int m, int n);
+	KM(float* data, int m, int n) {
+		init(data, m, n);
+	}
+
 	~KM();
 
 	int N;
-	float max_w;
-
+	int front;
+	int back;
+	int* matchX;
+	int* matchY;
 	float* weights;
+
+	void init(float* data, int m, int n);
+	void del();
+	void compute();
+	float maxWeight() {
+		return max_w;
+	}
+	vector<int> getMatch(bool front2back = true);
+
+private:
+	
+	float max_w;	
 	float* flagX;
 	float* flagY;
 	char* usedX;
 	char* usedY;
-	int* matchX;
-	int* matchY;
-
-	void init(float* data, int m, int n);
+	
 	void constructMatrix(float* data, int m, int n);
 	bool dfs(int v);
-	void km();
 };
-
-static PyObject* KM_getMatch(KM* self, PyObject* pArgs);
-static PyObject* maxWeights(KM* self, PyObject* pArgs) {
-	return Py_BuildValue("f", self->max_w);
-}
