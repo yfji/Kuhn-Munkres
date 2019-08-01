@@ -2,13 +2,13 @@
 #include <sstream>
 using namespace std;
 
-float* weights;
-float* flagX;
-float* flagY;
-char* usedX;
-char* usedY;
-int* matchX;
-int* matchY;
+// float* weights;
+// float* flagX;
+// float* flagY;
+// char* usedX;
+// char* usedY;
+// int* matchX;
+// int* matchY;
 static PyMemberDef KM_DataMembers[] =
 {
 	   {(char*)("max_w"),   T_FLOAT, offsetof(KM, max_w),   0, (char*)("Max weight")},
@@ -174,7 +174,7 @@ static PyObject* KM_Str(KM* self)
 	return Py_BuildValue("s", ostr.str().c_str());
 }
 
-static PyObject* KM_Repr(KM* self)            //µ÷ÓÃreprÄÚÖÃº¯ÊýÊ±×Ô¶¯µ÷ÓÃ.
+static PyObject* KM_Repr(KM* self)            //ï¿½ï¿½ï¿½ï¿½reprï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½Ê±ï¿½Ô¶ï¿½ï¿½ï¿½ï¿½ï¿½.
 {
 	return KM_Str(self);
 }
@@ -215,39 +215,39 @@ static PyModuleDef ModuleInfo =
 
 static PyTypeObject KM_ClassInfo =
 {
-	   PyVarObject_HEAD_INIT(NULL, 0)"Module.MyCppClass",                 //¿ÉÒÔÍ¨¹ý__class__»ñµÃÕâ¸ö×Ö·û´®. CPP¿ÉÒÔÓÃÀà.__name__»ñÈ¡.
-	   sizeof(KM),0,(destructor)KM_Destruct,    //ÀàµÄÎö¹¹º¯Êý.
+	   PyVarObject_HEAD_INIT(NULL, 0)"Module.MyCppClass",                 //ï¿½ï¿½ï¿½ï¿½Í¨ï¿½ï¿½__class__ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½. CPPï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.__name__ï¿½ï¿½È¡.
+	   sizeof(KM),0,(destructor)KM_Destruct,    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 	   0,0,0,0,
-	   (reprfunc)KM_Repr,          //repr ÄÚÖÃº¯Êýµ÷ÓÃ¡£
+	   (reprfunc)KM_Repr,          //repr ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¡ï¿½
 	   0,0,0,0,0,
-	   (reprfunc)KM_Str,          //Str/printÄÚÖÃº¯Êýµ÷ÓÃ.
+	   (reprfunc)KM_Str,          //Str/printï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 	   0,0,0,
-	   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,                 //Èç¹ûÃ»ÓÐÌá¹©·½·¨µÄ»°£¬ÎªPy_TPFLAGS_DEFAULE
-	   "MyCppClass Objects---Extensioned by C++!",                   //__doc__,Àà/½á¹¹µÄDocString.
+	   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,                 //ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½á¹©ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ÎªPy_TPFLAGS_DEFAULE
+	   "MyCppClass Objects---Extensioned by C++!",                   //__doc__,ï¿½ï¿½/ï¿½á¹¹ï¿½ï¿½DocString.
 	   0,0,0,0,0,0,
-	   KM_Methods,        //ÀàµÄËùÓÐ·½·¨¼¯ºÏ.
-	   KM_DataMembers,          //ÀàµÄËùÓÐÊý¾Ý³ÉÔ±¼¯ºÏ.
+	   KM_Methods,        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+	   KM_DataMembers,          //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½Ô±ï¿½ï¿½ï¿½ï¿½.
 	   0,0,0,0,0,0,
-	   (initproc)KM_init,      //ÀàµÄ¹¹Ôìº¯Êý.
+	   (initproc)KM_init,      //ï¿½ï¿½Ä¹ï¿½ï¿½ìº¯ï¿½ï¿½.
 	   0,
 };
 
 
 
-PyMODINIT_FUNC           // == __decslpec(dllexport) PyObject*, ¶¨Òåµ¼³öº¯Êý.
-PyInit_KM(void)       //Ä£¿éÍâ²¿Ãû³ÆÎª--CppClass
+PyMODINIT_FUNC           // == __decslpec(dllexport) PyObject*, ï¿½ï¿½ï¿½åµ¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+PyInit_KM(void)       //Ä£ï¿½ï¿½ï¿½â²¿ï¿½ï¿½ï¿½ï¿½Îª--CppClass
 {
 	PyObject* pReturn = 0;
-	KM_ClassInfo.tp_new = PyType_GenericNew;       //´ËÀàµÄnewÄÚÖÃº¯Êý¡ª½¨Á¢¶ÔÏó.
+	KM_ClassInfo.tp_new = PyType_GenericNew;       //ï¿½ï¿½ï¿½ï¿½ï¿½newï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
 
 	if (PyType_Ready(&KM_ClassInfo) < 0)
 		return NULL;
 
-	pReturn = PyModule_Create(&ModuleInfo);          //¸ù¾ÝÄ£¿éÐÅÏ¢´´½¨Ä£¿é.
+	pReturn = PyModule_Create(&ModuleInfo);          //ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½.
 	if (pReturn == 0)
 		return NULL;
 
 	Py_INCREF(&ModuleInfo);
-	PyModule_AddObject(pReturn, "KM", (PyObject*)&KM_ClassInfo); //½«Õâ¸öÀà¼ÓÈëµ½Ä£¿éµÄDictionaryÖÐ.
+	PyModule_AddObject(pReturn, "KM", (PyObject*)&KM_ClassInfo); //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ëµ½Ä£ï¿½ï¿½ï¿½Dictionaryï¿½ï¿½.
 	return pReturn;
 }
