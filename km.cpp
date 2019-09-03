@@ -84,7 +84,9 @@ bool KM::dfs(int v) {
 	usedX[v] = 1;
 	float* data = weights + v * N;
 	for (int i = 0; i < N; ++i) {
-		if (!usedY[i] && flagX[v] + flagY[i] == data[i]) {
+		float k = flagX[v] + flagY[i];
+		bool eq = (k - data[i] < 1e-6 && data[i] - k < 1e-6);
+		if (!usedY[i] && eq) {
 			usedY[i] = 1;
 			if (matchY[i] == -1 || dfs(matchY[i])) {
 				matchY[i] = v;
@@ -195,7 +197,7 @@ static PyObject* KM_Str(KM* self)
 	return Py_BuildValue("s", ostr.str().c_str());
 }
 
-static PyObject* KM_Repr(KM* self)            //µ÷ÓÃreprÄÚÖÃº¯ÊýÊ±×Ô¶¯µ÷ÓÃ.
+static PyObject* KM_Repr(KM* self)            //è°ƒç”¨reprå†…ç½®å‡½æ•°æ—¶è‡ªåŠ¨è°ƒç”¨.
 {
 	return KM_Str(self);
 }
@@ -245,39 +247,52 @@ static PyModuleDef ModuleInfo =
 
 static PyTypeObject KM_ClassInfo =
 {
-	   PyVarObject_HEAD_INIT(NULL, 0)"Module.MyCppClass",                 //¿ÉÒÔÍ¨¹ý__class__»ñµÃÕâ¸ö×Ö·û´®. CPP¿ÉÒÔÓÃÀà.__name__»ñÈ¡.
-	   sizeof(KM),0,(destructor)KM_Destruct,    //ÀàµÄÎö¹¹º¯Êý.
+	   PyVarObject_HEAD_INIT(NULL, 0)"Module.MyCppClass",                 //å¯ä»¥é€šè¿‡__class__èŽ·å¾—è¿™ä¸ªå­—ç¬¦ä¸². CPPå¯ä»¥ç”¨ç±».__name__èŽ·å–.
+	   sizeof(KM),0,(destructor)KM_Destruct,    //ç±»çš„æžæž„å‡½æ•°.
 	   0,0,0,0,
-	   (reprfunc)KM_Repr,          //repr ÄÚÖÃº¯Êýµ÷ÓÃ¡£
+	   (reprfunc)KM_Repr,          //repr å†…ç½®å‡½æ•°è°ƒç”¨ã€‚
 	   0,0,0,0,0,
-	   (reprfunc)KM_Str,          //Str/printÄÚÖÃº¯Êýµ÷ÓÃ.
+	   (reprfunc)KM_Str,          //Str/printå†…ç½®å‡½æ•°è°ƒç”¨.
 	   0,0,0,
-	   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,                 //Èç¹ûÃ»ÓÐÌá¹©·½·¨µÄ»°£¬ÎªPy_TPFLAGS_DEFAULE
-	   "MyCppClass Objects---Extensioned by C++!",                   //__doc__,Àà/½á¹¹µÄDocString.
+	   Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,                 //å¦‚æžœæ²¡æœ‰æä¾›æ–¹æ³•çš„è¯ï¼Œä¸ºPy_TPFLAGS_DEFAULE
+	   "MyCppClass Objects---Extensioned by C++!",                   //__doc__,ç±»/ç»“æž„çš„DocString.
 	   0,0,0,0,0,0,
-	   KM_Methods,        //ÀàµÄËùÓÐ·½·¨¼¯ºÏ.
-	   KM_DataMembers,          //ÀàµÄËùÓÐÊý¾Ý³ÉÔ±¼¯ºÏ.
+	   KM_Methods,        //ç±»çš„æ‰€æœ‰æ–¹æ³•é›†åˆ.
+	   KM_DataMembers,          //ç±»çš„æ‰€æœ‰æ•°æ®æˆå‘˜é›†åˆ.
 	   0,0,0,0,0,0,
-	   (initproc)KM_init,      //ÀàµÄ¹¹Ôìº¯Êý.
+	   (initproc)KM_init,      //ç±»çš„æž„é€ å‡½æ•°.
 	   0,
 };
 
 
 
-PyMODINIT_FUNC           // == __decslpec(dllexport) PyObject*, ¶¨Òåµ¼³öº¯Êý.
-PyInit_KM(void)       //Ä£¿éÍâ²¿Ãû³ÆÎª--CppClass
+PyMODINIT_FUNC           // == __decslpec(dllexport) PyObject*, å®šä¹‰å¯¼å‡ºå‡½æ•°.
+PyInit_KM(void)       //æ¨¡å—å¤–éƒ¨åç§°ä¸º--CppClass
 {
 	PyObject* pReturn = 0;
-	KM_ClassInfo.tp_new = PyType_GenericNew;       //´ËÀàµÄnewÄÚÖÃº¯Êý¡ª½¨Á¢¶ÔÏó.
+	KM_ClassInfo.tp_new = PyType_GenericNew;       //æ­¤ç±»çš„newå†…ç½®å‡½æ•°â€”å»ºç«‹å¯¹è±¡.
 
 	if (PyType_Ready(&KM_ClassInfo) < 0)
 		return NULL;
 
-	pReturn = PyModule_Create(&ModuleInfo);          //¸ù¾ÝÄ£¿éÐÅÏ¢´´½¨Ä£¿é.
+	pReturn = PyModule_Create(&ModuleInfo);          //æ ¹æ®æ¨¡å—ä¿¡æ¯åˆ›å»ºæ¨¡å—.
 	if (pReturn == 0)
 		return NULL;
 
 	Py_INCREF(&ModuleInfo);
-	PyModule_AddObject(pReturn, "KM", (PyObject*)&KM_ClassInfo); //½«Õâ¸öÀà¼ÓÈëµ½Ä£¿éµÄDictionaryÖÐ.
+	PyModule_AddObject(pReturn, "KM", (PyObject*)&KM_ClassInfo); //å°†è¿™ä¸ªç±»åŠ å…¥åˆ°æ¨¡å—çš„Dictionaryä¸­.
 	return pReturn;
+}
+
+ostream& operator<<(ostream& os, KM& km) {
+	for (int i = 0; i < km.N; ++i) {
+		for (int j = 0; j < km.N; ++j) {
+			os << km.weights[i*km.N+j];
+			if (j < km.N - 1)
+				os << ',';
+			else
+				os << endl;
+		}
+	}
+	return os;
 }
