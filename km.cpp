@@ -101,9 +101,9 @@ bool KM::dfs(int v) {
 void KM::compute() {
 	for (int i = 0; i < N; ++i) {
 		while (true) {
-			for (int i = 0; i < N; ++i) {
-				usedX[i] = 0;
-				usedY[i] = 0;
+			for (int j = 0; j < N; ++j) {
+				usedX[j] = 0;
+				usedY[j] = 0;
 			}
 			if (dfs(i))
 				break;
